@@ -1,0 +1,1 @@
+J'attends un paramètre : <?= $param ?>

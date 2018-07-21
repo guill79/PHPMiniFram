@@ -1,0 +1,1 @@
+le contenu : <?= $content ?>. Fin du contenu.

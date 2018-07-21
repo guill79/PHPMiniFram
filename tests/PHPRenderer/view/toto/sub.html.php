@@ -1,0 +1,1 @@
+<?php $renderer->extends('@toto/layout', $view) ?>je suis le contenu

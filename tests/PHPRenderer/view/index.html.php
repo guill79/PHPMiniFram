@@ -1,0 +1,1 @@
+Je suis l'index du dossier view.

@@ -1,0 +1,1 @@
+<?php $renderer->extends('@toto/layoutParams', $view, ['param' => 'salut'])?>ceci est le contenu<?= $content ?? '' ?>

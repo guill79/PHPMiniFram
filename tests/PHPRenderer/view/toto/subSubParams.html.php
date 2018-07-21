@@ -1,0 +1,1 @@
+<?php $renderer->extends('@toto/subParams', $view, ['param' => 'fake']) ?>subsub
