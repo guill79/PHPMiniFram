@@ -59,32 +59,32 @@ class PHPRenderer implements RendererInterface
      *
      * @param string $view Path to the view (e.g. '@namespace/view').
      * @param array $params Key/value pairs containing the params to pass in the view.
-     * @param string $extension File extension.
+     * @param string $_extension File extension.
      * @return string The view rendered.
      */
-    public function render(string $view, array $params = [], string $extension = 'html.php'): string
+    public function render(string $view, array $params = [], string $_extension = 'html.php'): string
     {
         if ($view[0] === '@') {
-            $namespace = substr($view, 1, strpos($view, '/') - 1);
-            $path = str_replace('@' . $namespace, $this->paths[$namespace], $view);
+            $_namespace = substr($view, 1, strpos($view, '/') - 1);
+            $_path = str_replace('@' . $_namespace, $this->paths[$_namespace], $view);
         } else {
-            $path = $this->paths[self::DEFAULT_NAMESPACE] . DIRECTORY_SEPARATOR . $view;
+            $_path = $this->paths[self::DEFAULT_NAMESPACE] . DIRECTORY_SEPARATOR . $view;
         }
 
         ob_start();
         extract($params);
         extract($this->globals);
         $renderer = $this;
-        require $path . '.' . $extension;
+        require $_path . '.' . $_extension;
         $render = ob_get_clean();
 
         if (isset($this->layoutViews[$view]) && $this->layoutViews[$view] !== null) {
-            $layoutView = $this->layoutViews[$view][0];
-            $layoutParams = $this->layoutViews[$view][1];
+            $_layoutView = $this->layoutViews[$view][0];
+            $_layoutParams = $this->layoutViews[$view][1];
             $this->layoutViews[$view] = null;
 
             $params['content'] = $render;
-            return $this->render($layoutView, array_merge($params, $layoutParams));
+            return $this->render($_layoutView, array_merge($params, $_layoutParams));
         }
 
         return $render;
