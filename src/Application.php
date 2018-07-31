@@ -2,23 +2,21 @@
 
 namespace Fram;
 
-use Fram\Auth\Auth;
+use DI\ContainerBuilder;
 use Fram\Renderer\RendererInterface;
-use Fram\RequestHandler;
 use Fram\Routing\Dispatcher;
 use Fram\Routing\Router;
-use Fram\Session\FlashMessage;
-use DI\ContainerBuilder;
-use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\ServerRequest;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 /**
  * Represents the main application
  */
-class Application
+class Application implements RequestHandlerInterface
 {
     /**
      * @var string[]
@@ -34,6 +32,16 @@ class Application
      * @var ContainerInterface
      */
     private $container;
+
+    /**
+     * @var MiddlewareInterface[]
+     */
+    private $middlewares = [];
+
+    /**
+     * @var int
+     */
+    private $middlewareIndex = 0;
 
     /**
      * Constructor.
@@ -54,6 +62,26 @@ class Application
     public function addModule(string $module): self
     {
         $this->modules[] = $module;
+        return $this;
+    }
+
+    /**
+     * Pipe a middleware.
+     *
+     * If the middleware is provided as a string, it will be automatically
+     * instantiated by the container.
+     *
+     * @param MiddlewareInterface|string $middleware
+     * @return Application
+     *
+     * @throws Exception
+     */
+    public function pipe($middleware): self
+    {
+        if (!is_string($middleware) && !($middleware instanceof MiddlewareInterface)) {
+            throw new \Exception('The middleware must be a string or an instance of MiddlewareInterface', 1);
+        }
+        $this->middlewares[] = $middleware;
         return $this;
     }
 
@@ -80,9 +108,6 @@ class Application
     /**
      * Runs the application.
      *
-     * TODO : add support for middlewares (the injection of the IP address, etc,
-     * have nothing to do here).
-     *
      * @param ServerRequest $request The request to handle.
      * @return ResponseInterface
      */
@@ -94,27 +119,31 @@ class Application
             $container->get($module);
         }
 
-        // Inject IP address in the request
-        $request = $request->withAttribute('ipAddress', $_SERVER['REMOTE_ADDR']);
+        $this->router = $container->get(Router::class);
+        $this->renderer = $container->get(RendererInterface::class);
+        $this->renderer->addGlobal('router', $this->router);
+        $this->renderer->addGlobal('container', $container);
 
-        // Check if $_POST['_method'] is defined
-        if (array_key_exists('_method', $request->getParsedBody())
-            && in_array($request->getParsedBody()['_method'], ['DELETE', 'PUT'])
-        ) {
-            $request = $request->withMethod($request->getParsedBody()['_method']);
+        return $this->handle($request);
+    }
+
+    /**
+     * Handle the request and return a response.
+     */
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        if (!isset($this->middlewares[$this->middlewareIndex])) {
+            // We reached the end of the middleware stack, let's begin handling the request
+            return (new Dispatcher($this->getContainer(), $this->router, $this->renderer))->dispatch($request);
         }
 
-        $router = $container->get(Router::class);
-        $renderer = $container->get(RendererInterface::class);
-        $renderer->addGlobal('router', $router);
-        $renderer->addGlobal('container', $container);
+        $middleware = $this->middlewares[$this->middlewareIndex];
 
-        // Retrieve URI
-        $uri = $request->getUri()->getPath();
-        if (!empty($uri) && $uri[-1] === '/' && $uri !== '/') {
-            return $router->redirect(301)->uri(substr($uri, 0, -1));
+        if (is_string($middleware)) {
+            $middleware = $this->container->get($middleware);
         }
+        $this->middlewareIndex++;
 
-        return (new Dispatcher($container, $router, $renderer))->dispatch($request);
+        return $middleware->process($request, $this);
     }
 }
