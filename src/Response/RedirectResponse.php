@@ -21,7 +21,7 @@ class RedirectResponse extends Response
      * @param Router $router
      * @param int $status The status code.
      */
-    public function __construct(Router $router, int $status = 302)
+    public function __construct(?Router $router, int $status = 302)
     {
         parent::__construct($status);
         $this->router = $router;
@@ -35,6 +35,8 @@ class RedirectResponse extends Response
      * @param array $queryParams GET parameters.
      * @param string|null $default The default URI if the route doesn't exist.
      * @return RedirectResponse
+     *
+     * @throws Exception
      */
     public function route(
         string $routeName,
@@ -42,6 +44,9 @@ class RedirectResponse extends Response
         array $queryParams = [],
         ?string $default = null
     ): self {
+        if (!$this->router) {
+            throw new \Exception('Cannot use route method if no router supplied.', 1);
+        }
         $uri = $this->router->generateUri($routeName, $substitutes, $queryParams, $default);
         return $this->withHeader('Location', $uri);
     }
