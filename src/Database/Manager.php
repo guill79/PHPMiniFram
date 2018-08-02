@@ -113,12 +113,12 @@ abstract class Manager
     /**
      * Retrieves an element from its id.
      *
-     * @param int $id
+     * @param int|null $id
      * @return stdClass|$entity
      *
      * @throws NoRecordException
      */
-    public function find(int $id)
+    public function find(?int $id)
     {
         return $this->findBy('id', $id);
     }
@@ -154,6 +154,9 @@ abstract class Manager
      */
     public function findBy(string $field, $value)
     {
+        if ($value === null) {
+            throw new NoRecordException();
+        }
         return $this->newQuery()
             ->where("$field = :field")
             ->params([
