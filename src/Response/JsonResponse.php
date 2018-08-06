@@ -12,13 +12,14 @@ class JsonResponse extends Response
     /**
      * Constructor.
      *
-     * @param mixed $encodedJson The JSON data to return.
+     * @param mixed $json The JSON data.
+     * @param bool $mustEncode Should the string be JSON-encoded before being sent ?
      * @param int $status The status code.
      * @param array $headers
      */
-    public function __construct($encodedJson, int $status = 200, array $headers = [])
+    public function __construct($json, bool $mustEncode = true, int $status = 200, array $headers = [])
     {
         $headers['Content-Type'] = 'application/json';
-        parent::__construct($status, $headers, $encodedJson);
+        parent::__construct($status, $headers, $mustEncode ? json_encode($json): $json);
     }
 }
