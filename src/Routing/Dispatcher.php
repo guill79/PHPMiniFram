@@ -126,6 +126,7 @@ class Dispatcher implements RequestHandlerInterface
     ): array {
         $paramsToPass = [];
         $getParams = $request->getAttributes() ?? [];
+        $getParams = array_merge($getParams, $request->getQueryParams() ?? []);
         $postParams = $request->getParsedBody() ?? [];
         $postParams = array_merge($postParams, $request->getUploadedFiles());
         foreach ($method->getParameters() as $param) {
