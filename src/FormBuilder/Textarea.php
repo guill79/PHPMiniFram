@@ -7,17 +7,17 @@ class Textarea extends Field
     /**
      * @var bool
      */
-    private $spellcheck;
+    protected $spellcheck;
 
     /**
      * @var string
      */
-    private $content;
+    protected $content;
 
     /**
      * @var string
      */
-    private $placeholder;
+    protected $placeholder;
 
     public function __construct(array $config = [])
     {
