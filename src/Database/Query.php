@@ -48,6 +48,11 @@ class Query implements \IteratorAggregate
     private $limit;
 
     /**
+     * @var string[]
+     */
+    private $groupBy = [];
+
+    /**
      * @var string
      */
     private $entity = \stdClass::class;
@@ -153,6 +158,19 @@ class Query implements \IteratorAggregate
     }
 
     /**
+     * Adds group by.
+     *
+     * @param string $field
+     * @return Query
+     */
+    public function groupBy(string $field): self
+    {
+        $this->groupBy[] = $field;
+
+        return $this;
+    }
+
+    /**
      * Specifies the limit.
      *
      * @param int $length
@@ -201,6 +219,7 @@ class Query implements \IteratorAggregate
         }
         $parts[] = join(', ', $from);
 
+
         // JOIN
         if (!empty($this->joins)) {
             foreach ($this->joins as $table => $joins) {
@@ -216,6 +235,10 @@ class Query implements \IteratorAggregate
             $parts[] = '(' . join(') AND (', $this->where) . ')';
         }
 
+        // GROUP BY
+        if (!empty($this->groupBy)) {
+            $parts[] = 'GROUP BY ' . join(', ', $this->groupBy);
+        }
         // ORDER BY
         if (!empty($this->order)) {
             $parts[] = 'ORDER BY';
