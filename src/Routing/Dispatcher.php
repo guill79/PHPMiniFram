@@ -76,14 +76,11 @@ class Dispatcher implements RequestHandlerInterface
 
         $this->routeHandler = $route->getHandler();
 
-        // If the route is associated with a group middleware, we run it before
-        // continuing the request.
-        $groupMiddleware = $this->router->getGroupMiddleware($route->getName());
-        if ($groupMiddleware) {
-            return $groupMiddleware->process($request, $this);
-        }
-
-        return $this->handle($request);
+        // If the route is associated with a stack middleware, we run all the middlewares
+        // before continuing the request.
+        $middlewareStack = $this->router->getMiddlewareStack($route->getName());
+        $middlewareStack->addfinalHandler($this);
+        return $middlewareStack->handle($request);
     }
 
     /**

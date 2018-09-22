@@ -3,6 +3,7 @@
 namespace Fram;
 
 use DI\ContainerBuilder;
+use Fram\Middleware\MiddlewareStack;
 use Fram\Renderer\RendererInterface;
 use Fram\Routing\Dispatcher;
 use Fram\Routing\Router;
@@ -34,14 +35,9 @@ class Application implements RequestHandlerInterface
     private $container;
 
     /**
-     * @var MiddlewareInterface[]
+     * @var MiddlewareStack
      */
-    private $middlewares = [];
-
-    /**
-     * @var int
-     */
-    private $middlewareIndex = 0;
+    private $middlewareStack;
 
     /**
      * Constructor.
@@ -51,6 +47,7 @@ class Application implements RequestHandlerInterface
     public function __construct(string $configFile)
     {
         $this->configFile = $configFile;
+        $this->middlewareStack = new MiddlewareStack($this);
     }
 
     /**
@@ -81,7 +78,12 @@ class Application implements RequestHandlerInterface
         if (!is_string($middleware) && !($middleware instanceof MiddlewareInterface)) {
             throw new \Exception('The middleware must be a string or an instance of MiddlewareInterface', 1);
         }
-        $this->middlewares[] = $middleware;
+
+        if (is_string($middleware)) {
+            $middleware = $this->getContainer()->get($middleware);
+        }
+        $this->middlewareStack->push($middleware);
+
         return $this;
     }
 
@@ -124,26 +126,11 @@ class Application implements RequestHandlerInterface
         $this->renderer->addGlobal('router', $this->router);
         $this->renderer->addGlobal('container', $container);
 
-        return $this->handle($request);
+        return $this->middlewareStack->handle($request);
     }
 
-    /**
-     * Handle the request and return a response.
-     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        if (!isset($this->middlewares[$this->middlewareIndex])) {
-            // We reached the end of the middleware stack, let's begin handling the request
-            return (new Dispatcher($this->getContainer(), $this->router, $this->renderer))->dispatch($request);
-        }
-
-        $middleware = $this->middlewares[$this->middlewareIndex];
-
-        if (is_string($middleware)) {
-            $middleware = $this->container->get($middleware);
-        }
-        $this->middlewareIndex++;
-
-        return $middleware->process($request, $this);
+        return (new Dispatcher($this->getContainer(), $this->router, $this->renderer))->dispatch($request);
     }
 }

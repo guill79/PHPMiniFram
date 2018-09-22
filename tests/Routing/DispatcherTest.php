@@ -2,6 +2,7 @@
 
 namespace Tests\Routing;
 
+use Fram\Middleware\MiddlewareStack;
 use Fram\Renderer\RendererInterface;
 use Fram\Routing\Dispatcher;
 use Fram\Routing\InvalidArgumentsError;
@@ -27,8 +28,6 @@ class DispatcherTest extends TestCase
 
     public function setUp()
     {
-        $this->router = $this->createMock(Router::class);
-
         $this->container = $this->createMock(ContainerInterface::class);
         $this->container->method('get')->willReturn(new TotoController());
         
@@ -37,6 +36,7 @@ class DispatcherTest extends TestCase
         $this->request->method('getUploadedFiles')->willReturn([]);
 
         $this->renderer = $this->createMock(RendererInterface::class);
+        $this->addGroupMiddleware(null);   
     }
 
     private function addRouteValid($handler, array $params = [])
@@ -65,18 +65,20 @@ class DispatcherTest extends TestCase
             ->with($this->isInstanceOf(ServerRequestInterface::class));
     }
 
-    private function addGroupMiddleware($returnValue)
+    private function addGroupMiddleware($middleware)
     {
+        $this->router = $this->createMock(Router::class);
+        $stack = new MiddlewareStack();
+        if ($middleware) $stack->push($middleware);
+
         $this->router
-            ->expects($this->once())
-            ->method('getGroupMiddleware')->willReturn($returnValue)
+            // ->expects($this->once())
+            ->method('getMiddlewareStack')->willReturn($stack)
             ->with($this->isType('string'));
     }
 
     public function testDispatchingWithoutGroupMiddleware()
     {
-        $this->addGroupMiddleware(null);
-
         $this->addRouteValid(TotoController::class);
 
         $dispatcher = new Dispatcher($this->container, $this->router, $this->renderer);

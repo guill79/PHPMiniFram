@@ -2,6 +2,7 @@
 
 namespace Fram\Routing;
 
+use Fram\Middleware\MiddlewareStack;
 use Fram\Response\RedirectResponse;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
@@ -23,7 +24,13 @@ class Router
     private $internalRouter;
 
     /**
-     * ['group_name' => $middleware, ...]
+     * [
+     *     'group_name' => [
+     *          $middleware,
+     *          ...
+     *      ],
+     *      ...
+     * ]
      * @var array
      */
     private $groupMiddlewares = [];
@@ -125,37 +132,38 @@ class Router
      * @param string $groupName The name of the group.
      * @param MiddlewareInterface $middleware The middleware.
      */
-    public function addGroupMiddleware(string $groupName, MiddlewareInterface $middleware)
+    public function addGroupMiddleware(string $groupName, MiddlewareInterface... $middlewares)
     {
-        $this->groupMiddlewares[$groupName] = $middleware;
+        foreach ($middlewares as $middleware) {
+            $this->groupMiddlewares[$groupName][] = $middleware;
+        }
     }
 
     /**
-     * Returns the middleware corresponding to the group of the route.
-     *
-     * The group middleware returned is the most 'intern'. For example, if a group
-     * named 'admin' exists and another one named 'admin.sub', the middleware
-     * returned is the one associated with 'admin.sub'.
+     * Returns the middleware stack corresponding to the group of the route.
      *
      * @param string $routeName The name of the route.
-     * @return MiddlewareInterface|null
+     * @return MiddlewareStack
      */
-    public function getGroupMiddleware(string $routeName): ?MiddlewareInterface
+    public function getMiddlewareStack(string $routeName): MiddlewareStack
     {
         $groupName = '';
         $parts = explode('.', $routeName);
+        $stack = new MiddlewareStack();
 
         foreach ($parts as $key => $value) {
-            if ($key !== 0) {
+            if ($key > 0) {
                 $groupName .= '.';
             }
             $groupName .= $value;
             if (isset($this->groupMiddlewares[$groupName])) {
-                $group = $this->groupMiddlewares[$groupName];
+                foreach ($this->groupMiddlewares[$groupName] as $middleware) {
+                    $stack->push($middleware);
+                }
             }
         }
 
-        return $group ?? null;
+        return $stack;
     }
 
     /**
