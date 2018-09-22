@@ -74,11 +74,12 @@ abstract class Manager
     /**
      * Returns a list of the records. [$id => $name, ...]
      *
+     * @var string $orderBy
      * @return array
      */
-    public function findList(): array
+    public function findList(string $orderBy = 'id'): array
     {
-        $results = $this->pdo->query('SELECT id, name FROM ' . $this->table . ' ORDER BY id')
+        $results = $this->pdo->query('SELECT id, name FROM ' . $this->table . ' ORDER BY ' . $orderBy)
             ->fetchAll(PDO::FETCH_NUM);
         $list = [];
         foreach ($results as $result) {
