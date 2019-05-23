@@ -1,4 +1,6 @@
 # PHPMiniFram
-A little framework for creating websites.
+A little framework I made to learn OOP in PHP.
 
-*Not intended for general use.*
+Heavily inspired by Grafikart's PHP course: https://www.grafikart.fr/formations/mise-pratique-poo
+
+**Not production-ready!**
